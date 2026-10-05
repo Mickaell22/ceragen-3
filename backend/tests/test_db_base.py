@@ -3,6 +3,7 @@
 Corre como superusuario dentro de UNA transacción que se revierte al final:
 cambia de rol con SET ROLE y no deja nada en la base.
 """
+
 import os
 
 import psycopg
@@ -44,7 +45,9 @@ def test_new_functions_are_not_public(db):
 
 def test_audit_trigger_logs_changes_with_user(db):
     db.execute("SET ROLE ceragen_owner")
-    db.execute("CREATE TABLE core.audit_probe (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text)")
+    db.execute(
+        "CREATE TABLE core.audit_probe (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text)"
+    )
     db.execute("SELECT audit.fn_enable('core.audit_probe')")
     db.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON core.audit_probe TO ceragen_app")
 
