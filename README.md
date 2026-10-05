@@ -14,6 +14,21 @@ clínico, paquetes de terapia, facturación y agenda de sesiones.
 | Frontend | React + TypeScript (Vite, Material UI) |
 | Infra | Docker Compose, Railway |
 
+## Correr en local
+
+Requisitos: Docker con Compose.
+
+```bash
+cp .env.example .env    # completar los valores vacíos (openssl rand -hex 32)
+docker compose up --build
+```
+
+- API: http://localhost:8000 (documentación interactiva en `/docs`)
+- Salud: http://localhost:8000/health
+
+Si el puerto 5432 ya lo usa otro Postgres de tu máquina, cambia
+`POSTGRES_PORT` en `.env`.
+
 ## Decisiones de diseño
 
 - **Integridad en la base:** reglas como "un terapeuta no puede tener dos
