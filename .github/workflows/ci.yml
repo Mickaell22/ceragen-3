@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la corrida anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Lint (ruff)
+        working-directory: backend
+        run: |
+          pip install "$(grep '^ruff==' requirements-dev.txt)"
+          ruff check .
+          ruff format --check .
+
+      # Mismo compose que en local: valida también el bootstrap, las migraciones
+      # y los roles. Los secretos son aleatorios y mueren con la corrida.
+      - name: .env efímero
+        run: |
+          cp .env.example .env
+          for v in POSTGRES_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD JWT_SECRET SEED_ADMIN_PASSWORD; do
+            sed -i "s|^$v=.*|$v=$(openssl rand -hex 32)|" .env
+          done
+
+      - name: Tests de base de datos
+        run: docker compose run --rm --build test
+
+      - name: La API arranca como ceragen_app y responde /health
+        run: docker compose up -d --build --wait api
+
+      - name: Logs si algo falló
+        if: failure()
+        run: docker compose logs
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - name: Typecheck + build
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:8000

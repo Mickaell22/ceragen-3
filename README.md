@@ -1,5 +1,7 @@
 # Ceragen 3.0
 
+[![CI](https://github.com/Mickaell22/ceragen-3/actions/workflows/ci.yml/badge.svg)](https://github.com/Mickaell22/ceragen-3/actions/workflows/ci.yml)
+
 Sistema de gestión para un centro de fisioterapia: pacientes, historial
 clínico, paquetes de terapia, facturación y agenda de sesiones.
 
@@ -49,6 +51,13 @@ docker compose run --rm --build test
 Nueva migración: `docker compose run --rm migrate alembic revision -m "descripcion"`
 (el archivo aparece dentro del contenedor; más cómodo crearlo a mano en
 `backend/migrations/versions/` siguiendo el formato de `0001_base.py`).
+
+Lint (lo mismo que corre el CI en cada PR):
+
+```bash
+cd backend && ruff check . && ruff format --check .   # ruff fijado en requirements-dev.txt
+cd frontend && npm run lint                            # oxlint
+```
 
 `VITE_API_URL` se incrusta al compilar: si la cambias, reconstruye con
 `docker compose up --build web`.

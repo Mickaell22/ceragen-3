@@ -1,0 +1,9 @@
+line-length = 110
+target-version = "py313"
+
+[lint]
+# E/F: errores base, I: imports ordenados, B: bugs comunes, UP: sintaxis moderna, S: seguridad (bandit)
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[lint.per-file-ignores]
+"tests/**" = ["S101"]  # pytest usa assert a propósito

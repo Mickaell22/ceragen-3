@@ -71,8 +71,9 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
       licencia no permite publicarla en un repo público.)
 - [x] Día 4: `feat/db-migrations-base` — Alembic, roles `ceragen_owner` /
       `ceragen_app`, schemas, convenciones, trigger de auditoría genérico.
-- [ ] Día 5: `ci/github-actions` — lint (ruff, eslint) + tests contra Postgres
-      en cada PR.
+- [x] Día 5: `ci/github-actions` — lint (ruff, oxlint) + tests contra Postgres
+      en cada PR. (oxlint en vez de eslint: typescript-eslint aún no soporta
+      TypeScript 7.)
 
 ### Fase 3 — Seguridad
 - [ ] Día 6: `feat/db-security` — tablas `security`, `fn_login`, bcrypt con

@@ -4,6 +4,7 @@ Es lo único que corre con el superusuario: los roles son objetos del cluster
 y Alembic (que corre como ceragen_owner) no puede crearlos. Si el rol ya
 existe, se le resincroniza la contraseña con la del entorno (sirve para rotarla).
 """
+
 import os
 import sys
 
