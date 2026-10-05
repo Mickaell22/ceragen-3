@@ -1,0 +1,15 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+
+    # SPA: las rutas de React Router caen en index.html.
+    location / {
+        try_files $uri /index.html;
+    }
+
+    # Los assets llevan hash en el nombre: se pueden cachear para siempre.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}

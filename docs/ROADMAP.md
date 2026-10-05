@@ -65,9 +65,10 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 ### Fase 2 — Esqueleto del monorepo
 - [x] Día 2: `chore/repo-setup` — `.gitignore`, `.env.example`,
       README mínimo, protección de `main`.
-- [ ] Día 3: `chore/docker-compose` — Postgres 17 + API FastAPI "hola mundo"
-      con healthcheck + front starterkit TS de Modernize, todo con
-      `docker compose up`.
+- [x] Día 3: `chore/docker-compose` + `feat/frontend-shell` — Postgres 17 +
+      API FastAPI con healthcheck + front con Modernize Lite (MIT) portada a
+      TypeScript, todo con `docker compose up`. (La Pro se descartó: su
+      licencia no permite publicarla en un repo público.)
 - [ ] Día 4: `feat/db-migrations-base` — Alembic, roles `ceragen_owner` /
       `ceragen_app`, schemas, convenciones, trigger de auditoría genérico.
 - [ ] Día 5: `ci/github-actions` — lint (ruff, eslint) + tests contra Postgres
