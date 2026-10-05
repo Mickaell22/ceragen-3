@@ -63,7 +63,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 - [x] Día 1: diseño del modelo aprobado (`docs/diseno-modelo.md`) y repo creado.
 
 ### Fase 2 — Esqueleto del monorepo
-- [ ] Día 2: `chore/repo-setup` — `.gitignore`, `.env.example`,
+- [x] Día 2: `chore/repo-setup` — `.gitignore`, `.env.example`,
       README mínimo, protección de `main`.
 - [ ] Día 3: `chore/docker-compose` — Postgres 17 + API FastAPI "hola mundo"
       con healthcheck + front starterkit TS de Modernize, todo con
