@@ -1,6 +1,7 @@
 # Diseño del modelo de datos — Ceragen 3.0
 
-Estado: **aprobado**. Todavía no implementado (ver `ROADMAP.md`).
+Estado: **aprobado**. En implementación: base (schemas, roles, auditoría) hecha
+en la migración `0001`; el resto por módulos según `ROADMAP.md`.
 
 Punto de partida: el esquema `ceragen` del proyecto original (36 tablas, 41 FK,
 6 UNIQUE, 25 triggers), limpiado de restos de otras prácticas. Este documento
@@ -178,6 +179,23 @@ Cada función tiene su test en pytest contra un Postgres real.
 
 Las funciones que escriben donde la API no puede usan `SECURITY DEFINER` con
 `SET search_path` fijo (sin eso, `SECURITY DEFINER` es un hueco de seguridad).
+
+Cómo se aplica (implementado en el día 4):
+
+- **Los roles los crea un bootstrap** (`backend/app/db/bootstrap.py`) con el
+  superusuario, porque son objetos del cluster y Alembic corre como
+  `ceragen_owner`. Es idempotente y resincroniza las contraseñas con el
+  entorno (permite rotarlas). Deja a `ceragen_owner` como dueño de la base
+  y quita `CONNECT` a `PUBLIC`.
+- **Nada es ejecutable por defecto:** Postgres da `EXECUTE` a `PUBLIC` en cada
+  función nueva; la migración base lo revoca con `ALTER DEFAULT PRIVILEGES`.
+  Cada función que la API pueda llamar se concede a mano en su migración.
+- **Permisos de tabla explícitos:** no hay default privileges de tablas para
+  `ceragen_app`; cada migración concede lo justo sobre lo que crea. Olvidarse
+  un `GRANT` falla cerrado (la API recibe "permission denied"), nunca abierto.
+- **Techo conocido:** `ceragen_app` todavía puede conectarse a la base de
+  mantenimiento `postgres` (CONNECT de `PUBLIC` por defecto), sin poder crear
+  nada ahí. No se toca porque en Railway es la base del proveedor.
 
 ## 7. Datos semilla
 

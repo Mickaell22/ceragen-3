@@ -19,17 +19,32 @@ services:
       timeout: 3s
       retries: 10
 
+  # Corre una vez y termina: crea los roles (superusuario) y aplica las
+  # migraciones (ceragen_owner). Las contraseñas van en la URL: deben ser
+  # seguras para URL (las de openssl rand -hex lo son).
+  migrate:
+    build: ./backend
+    command: sh -c "python -m app.db.bootstrap && alembic upgrade head"
+    environment:
+      DATABASE_ADMIN_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_OWNER_URL: postgresql://ceragen_owner:${DB_OWNER_PASSWORD:?falta DB_OWNER_PASSWORD en .env}@db:5432/${POSTGRES_DB}
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD en .env}
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build: ./backend
     environment:
-      # ponytail: por ahora la API usa el superusuario; el Dia 4 pasa al rol ceragen_app.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Mínimo privilegio: la API nunca usa el superusuario ni el dueño del esquema.
+      DATABASE_URL: postgresql://ceragen_app:${DB_APP_PASSWORD}@db:5432/${POSTGRES_DB}
       CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS en .env}
     ports:
       - "127.0.0.1:${API_PORT:?falta API_PORT en .env}:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -45,6 +60,22 @@ services:
       PORT: 8080
     ports:
       - "127.0.0.1:${WEB_PORT:?falta WEB_PORT en .env}:8080"
+
+  # Solo bajo demanda: docker compose run --rm test
+  test:
+    profiles: [test]
+    build:
+      context: ./backend
+      args:
+        INSTALL_DEV: "true"
+    command: pytest -q -p no:cacheprovider
+    environment:
+      DATABASE_ADMIN_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      - ./backend/tests:/app/tests:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
