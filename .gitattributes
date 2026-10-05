@@ -1,0 +1,7 @@
+# Finales de linea LF en el repo, aunque se edite desde Windows.
+# Evita scripts .sh rotos en Docker y diffs con CRLF mezclado.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary

@@ -1,0 +1,33 @@
+# Secretos y configuracion local
+.env
+.env.*
+!.env.example
+
+# Respaldos de base de datos (pueden traer datos personales reales)
+backups/
+*.dump
+*[Dd][Uu][Mm][Pp]*.sql
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+npm-debug.log*
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
