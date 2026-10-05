@@ -5,9 +5,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# INSTALL_DEV=true solo para la imagen de tests (pytest); la de producción no lo trae.
+ARG INSTALL_DEV=false
+COPY requirements.txt requirements-dev.txt ./
+RUN if [ "$INSTALL_DEV" = "true" ]; then pip install --no-cache-dir -r requirements-dev.txt; \
+    else pip install --no-cache-dir -r requirements.txt; fi
 
+COPY alembic.ini ./
+COPY migrations ./migrations
 COPY app ./app
 
 # Usuario sin privilegios dentro del contenedor

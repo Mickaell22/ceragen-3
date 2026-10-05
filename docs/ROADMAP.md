@@ -69,7 +69,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
       API FastAPI con healthcheck + front con Modernize Lite (MIT) portada a
       TypeScript, todo con `docker compose up`. (La Pro se descartó: su
       licencia no permite publicarla en un repo público.)
-- [ ] Día 4: `feat/db-migrations-base` — Alembic, roles `ceragen_owner` /
+- [x] Día 4: `feat/db-migrations-base` — Alembic, roles `ceragen_owner` /
       `ceragen_app`, schemas, convenciones, trigger de auditoría genérico.
 - [ ] Día 5: `ci/github-actions` — lint (ruff, eslint) + tests contra Postgres
       en cada PR.
