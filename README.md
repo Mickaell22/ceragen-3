@@ -23,11 +23,22 @@ cp .env.example .env    # completar los valores vacíos (openssl rand -hex 32)
 docker compose up --build
 ```
 
+- Web: http://localhost:8080
 - API: http://localhost:8000 (documentación interactiva en `/docs`)
 - Salud: http://localhost:8000/health
 
-Si el puerto 5432 ya lo usa otro Postgres de tu máquina, cambia
-`POSTGRES_PORT` en `.env`.
+Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
+(`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
+`VITE_API_URL` para que coincidan.
+
+Front con recarga en caliente (contra la API de compose):
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+`VITE_API_URL` se incrusta al compilar: si la cambias, reconstruye con
+`docker compose up --build web`.
 
 ## Decisiones de diseño
 
@@ -39,6 +50,12 @@ Si el puerto 5432 ya lo usa otro Postgres de tu máquina, cambia
   de base de datos transaccionales.
 
 Detalle completo en [`docs/diseno-modelo.md`](docs/diseno-modelo.md).
+
+## Créditos
+
+La interfaz parte de [Modernize React Lite](https://github.com/adminmart/modernize-react-lite)
+de AdminMart (licencia MIT, ver `frontend/LICENSE-modernize-lite.txt`),
+portada a TypeScript y recortada a lo que usa el proyecto.
 
 ## Origen
 
