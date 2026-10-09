@@ -76,7 +76,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
       TypeScript 7.)
 
 ### Fase 3 — Seguridad
-- [ ] Día 6: `feat/db-security` — tablas `security`, `fn_login`, bcrypt con
+- [x] Día 6: `feat/db-security` — tablas `security`, `fn_login`, bcrypt con
       pgcrypto, bloqueo temporal, tests.
 - [ ] Día 7: `feat/api-auth` — login JWT, dependencia `current_user`,
       `SET LOCAL app.user_id` por request, manejo de errores sin filtrar

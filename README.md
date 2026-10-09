@@ -26,7 +26,8 @@ docker compose up --build
 ```
 
 `docker compose up` también corre el servicio `migrate`: crea los roles de la
-base y aplica las migraciones de Alembic antes de que arranque la API.
+base, aplica las migraciones de Alembic y crea el usuario administrador de la
+demo (`SEED_ADMIN_*` en `.env`) antes de que arranque la API.
 
 - Web: http://localhost:8080
 - API: http://localhost:8000 (documentación interactiva en `/docs`)
@@ -70,6 +71,11 @@ cd frontend && npm run lint                            # oxlint
   solo crea los roles; `ceragen_owner` solo aplica migraciones; la API entra
   como `ceragen_app`, que no puede leer contraseñas, tocar la auditoría,
   borrar filas ni alterar el esquema.
+- **Contraseñas fuera del alcance de la API:** bcrypt (pgcrypto) dentro de la
+  base. La API no tiene permisos sobre las tablas de `security`; solo llama
+  funciones como `security.fn_login`, que nunca devuelven el hash. Bloqueo
+  temporal tras intentos fallidos y tiempo de respuesta parejo exista o no el
+  usuario.
 - **Auditoría automática:** un trigger genérico registra cada cambio en
   `audit.event` (jsonb antes/después y quién lo hizo); activarlo en una tabla
   nueva es `SELECT audit.fn_enable('schema.tabla')`.
