@@ -24,12 +24,15 @@ services:
   # seguras para URL (las de openssl rand -hex lo son).
   migrate:
     build: ./backend
-    command: sh -c "python -m app.db.bootstrap && alembic upgrade head"
+    command: sh -c "python -m app.db.bootstrap && alembic upgrade head && python -m app.db.seed"
     environment:
       DATABASE_ADMIN_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       DATABASE_OWNER_URL: postgresql://ceragen_owner:${DB_OWNER_PASSWORD:?falta DB_OWNER_PASSWORD en .env}@db:5432/${POSTGRES_DB}
       DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD}
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:?falta DB_APP_PASSWORD en .env}
+      SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:?falta SEED_ADMIN_USERNAME en .env}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:?falta SEED_ADMIN_EMAIL en .env}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?falta SEED_ADMIN_PASSWORD en .env}
     depends_on:
       db:
         condition: service_healthy

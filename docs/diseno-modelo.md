@@ -1,7 +1,7 @@
 # Diseño del modelo de datos — Ceragen 3.0
 
-Estado: **aprobado**. En implementación: base (schemas, roles, auditoría) hecha
-en la migración `0001`; el resto por módulos según `ROADMAP.md`.
+Estado: **aprobado**. En implementación: base (schemas, roles, auditoría) en la
+migración `0001`, `security` en la `0002`; el resto por módulos según `ROADMAP.md`.
 
 Punto de partida: el esquema `ceragen` del proyecto original (36 tablas, 41 FK,
 6 UNIQUE, 25 triggers), limpiado de restos de otras prácticas. Este documento
@@ -159,6 +159,28 @@ Cambios respecto al original:
 | `audit.fn_log_change()` | Trigger genérico. |
 
 Cada función tiene su test en pytest contra un Postgres real.
+
+### Notas de implementación de `security` (día 6)
+
+- `fn_login` **no lanza excepciones**: devuelve `status` (`ok`, `invalid`,
+  `locked`). Un `RAISE` revertiría el contador de intentos fallidos. La
+  política (intentos máximos, minutos de bloqueo, duración de sesión) llega
+  como parámetro desde la configuración de la API.
+- Usuario inexistente o inactivo: `invalid`, y se calcula igual un bcrypt
+  para que el tiempo de respuesta no revele si existe. `locked` sí revela que
+  la cuenta existe (fuga aceptada a cambio de explicarle al usuario por qué
+  no entra); mientras dura el bloqueo no se verifica la contraseña.
+- `fn_session_user(jti)` se consulta en cada request: un JWT vigente no sirve
+  si la sesión fue revocada o el usuario desactivado.
+- `fn_create_user` exige que el usuario de la transacción sea admin, salvo
+  que la sesión sea `ceragen_owner` (migraciones y semilla).
+- `fn_change_password` cierra todas las sesiones abiertas del usuario.
+- El trigger de auditoría descarta la columna `password_hash`.
+- Columnas de auditoría y triggers comunes en `migrations/conventions.py`:
+  `created_by` se llena solo desde `app.user_id` y `core.fn_touch()` mantiene
+  `updated_at`/`updated_by`.
+- Pospuesto: `person_id` en `security.user` (llega con `core`) y `module`,
+  `menu`, `menu_role` (día 9, cuando el front los consuma).
 
 ## 6. Roles y permisos
 

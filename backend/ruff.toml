@@ -6,4 +6,5 @@ target-version = "py313"
 select = ["E", "F", "I", "B", "UP", "S"]
 
 [lint.per-file-ignores]
-"tests/**" = ["S101"]  # pytest usa assert a propósito
+"tests/**" = ["S101", "S105"]  # pytest usa assert; las contraseñas de test son ficticias
+"migrations/**" = ["S608"]  # el SQL se arma con constantes del repo, nunca con entrada de usuario

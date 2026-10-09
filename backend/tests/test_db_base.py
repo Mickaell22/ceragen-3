@@ -1,31 +1,6 @@
-"""Migración base: permisos de ceragen_app y trigger de auditoría.
+"""Migración base: permisos de ceragen_app y trigger de auditoría."""
 
-Corre como superusuario dentro de UNA transacción que se revierte al final:
-cambia de rol con SET ROLE y no deja nada en la base.
-"""
-
-import os
-
-import psycopg
-import pytest
-from psycopg import errors
-
-
-@pytest.fixture
-def db():
-    with psycopg.connect(os.environ["DATABASE_ADMIN_URL"]) as conn:
-        yield conn
-        conn.rollback()
-
-
-def denied(conn, query):
-    """True si la consulta falla por falta de permisos (en un savepoint, para seguir usando la conexión)."""
-    try:
-        with conn.transaction():
-            conn.execute(query)
-    except errors.InsufficientPrivilege:
-        return True
-    return False
+from conftest import denied
 
 
 def test_app_cannot_touch_audit_or_ddl(db):
