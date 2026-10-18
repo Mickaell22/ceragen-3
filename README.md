@@ -33,6 +33,14 @@ demo (`SEED_ADMIN_*` en `.env`) antes de que arranque la API.
 - API: http://localhost:8000 (documentación interactiva en `/docs`)
 - Salud: http://localhost:8000/health
 
+Endpoints de autenticación (documentados en `/docs`):
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/auth/login` | Usuario y contraseña → JWT (`Authorization: Bearer ...`). 401 si no coinciden, 423 si la cuenta está bloqueada. |
+| `GET` | `/auth/me` | Perfil y roles del usuario del token. |
+| `POST` | `/auth/logout` | Revoca la sesión en la base: el token deja de servir aunque no haya vencido. |
+
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
 `VITE_API_URL` para que coincidan.
@@ -76,6 +84,11 @@ cd frontend && npm run lint                            # oxlint
   funciones como `security.fn_login`, que nunca devuelven el hash. Bloqueo
   temporal tras intentos fallidos y tiempo de respuesta parejo exista o no el
   usuario.
+- **Tokens revocables:** el JWT lleva el id de la sesión (`jti`) y la API lo
+  verifica contra la base en cada request; un logout o desactivar al usuario
+  lo invalida al instante.
+- **Errores sin fugas:** un error inesperado responde un mensaje genérico (el
+  detalle va al log) y los errores de validación no repiten lo que se envió.
 - **Auditoría automática:** un trigger genérico registra cada cambio en
   `audit.event` (jsonb antes/después y quién lo hizo); activarlo en una tabla
   nueva es `SELECT audit.fn_enable('schema.tabla')`.

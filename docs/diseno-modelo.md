@@ -179,6 +179,23 @@ Cada función tiene su test en pytest contra un Postgres real.
 - Columnas de auditoría y triggers comunes en `migrations/conventions.py`:
   `created_by` se llena solo desde `app.user_id` y `core.fn_touch()` mantiene
   `updated_at`/`updated_by`.
+- `fn_me()` (migración `0003`) devuelve solo al usuario de `app.user_id`, sin
+  parámetros: la API no puede usarla para leer a otros usuarios.
+
+### Notas de la API de autenticación (día 7)
+
+- Una transacción por request (`app/db/session.py`), con `scope="function"`:
+  el commit corre antes de enviar la respuesta. Con el default de FastAPI
+  corre después, y un commit fallido llegaría al cliente como 200.
+- `current_user` verifica firma y `exp` (algoritmo fijo HS256, nunca el que
+  diga el token), consulta `fn_session_user(jti)` y fija `app.user_id` con
+  `set_config(..., true)` en la misma transacción que usa el endpoint.
+- En `/auth/login`, ante `invalid` o `locked` se hace commit **antes** de
+  responder el error: si no, el rollback del request borraría el intento
+  fallido y el bloqueo nunca llegaría.
+- La IP de la sesión se valida con `ipaddress`; si no es una IP se guarda
+  NULL. Detrás del proxy de Railway hay que configurar `FORWARDED_ALLOW_IPS`
+  para que sea la del cliente.
 - Pospuesto: `person_id` en `security.user` (llega con `core`) y `module`,
   `menu`, `menu_role` (día 9, cuando el front los consuma).
 
