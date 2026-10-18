@@ -1,6 +1,16 @@
 # Entorno local completo: docker compose up --build
 # Las variables salen de .env (plantilla en .env.example).
 
+# Entorno de la API, compartido con los tests (que levantan la app en proceso).
+x-api-env: &api-env
+  # Mínimo privilegio: la API nunca usa el superusuario ni el dueño del esquema.
+  DATABASE_URL: postgresql://ceragen_app:${DB_APP_PASSWORD}@db:5432/${POSTGRES_DB}
+  CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS en .env}
+  JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET en .env}
+  JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:?falta JWT_EXPIRE_MINUTES en .env}
+  LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:?falta LOGIN_MAX_ATTEMPTS en .env}
+  LOGIN_LOCK_MINUTES: ${LOGIN_LOCK_MINUTES:?falta LOGIN_LOCK_MINUTES en .env}
+
 services:
   db:
     image: postgres:17
@@ -39,10 +49,7 @@ services:
 
   api:
     build: ./backend
-    environment:
-      # Mínimo privilegio: la API nunca usa el superusuario ni el dueño del esquema.
-      DATABASE_URL: postgresql://ceragen_app:${DB_APP_PASSWORD}@db:5432/${POSTGRES_DB}
-      CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS en .env}
+    environment: *api-env
     ports:
       - "127.0.0.1:${API_PORT:?falta API_PORT en .env}:8000"
     depends_on:
@@ -71,8 +78,9 @@ services:
       context: ./backend
       args:
         INSTALL_DEV: "true"
-    command: pytest -q -p no:cacheprovider
+    command: pytest -q
     environment:
+      <<: *api-env
       DATABASE_ADMIN_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     volumes:
       - ./backend/tests:/app/tests:ro
