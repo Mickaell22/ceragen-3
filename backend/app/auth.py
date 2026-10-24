@@ -1,4 +1,5 @@
-"""Login con JWT. La base valida contraseñas y sesiones; la API solo firma y verifica tokens."""
+"""Login con JWT en cookie httpOnly. La base valida contraseñas y sesiones; la API solo firma y
+verifica tokens. El token nunca llega a JavaScript: un XSS no puede robarlo."""
 
 import ipaddress
 from dataclasses import dataclass
@@ -7,8 +8,7 @@ from typing import Annotated
 from uuid import UUID
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
@@ -16,13 +16,10 @@ from app.config import settings
 from app.db.session import Db
 
 ALGORITHM = "HS256"
+COOKIE = "ceragen_session"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-bearer = HTTPBearer(auto_error=False)
-
-INVALID_TOKEN = HTTPException(
-    status.HTTP_401_UNAUTHORIZED, "Sesión inválida o expirada", headers={"WWW-Authenticate": "Bearer"}
-)
+INVALID_TOKEN = HTTPException(status.HTTP_401_UNAUTHORIZED, "Sesión inválida o expirada")
 
 
 @dataclass(frozen=True)
@@ -31,18 +28,17 @@ class CurrentUser:
     jti: UUID
 
 
-def current_user(
-    db: Db, creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]
-) -> CurrentUser:
+def current_user(request: Request, db: Db) -> CurrentUser:
     """Exige un JWT válido Y una sesión viva en la base (logout o usuario desactivado lo invalidan).
 
     Fija app.user_id en la transacción del request: la auditoría y created_by lo leen de ahí.
     """
-    if creds is None:
+    token = request.cookies.get(COOKIE)
+    if not token:
         raise INVALID_TOKEN
     try:
         claims = jwt.decode(
-            creds.credentials,
+            token,
             settings.jwt_secret.get_secret_value(),
             algorithms=[ALGORITHM],  # fijo: nunca aceptar el algoritmo que diga el token
             options={"require": ["sub", "jti", "exp"]},
@@ -73,8 +69,6 @@ class Role(BaseModel):
 
 
 class LoginOut(BaseModel):
-    access_token: str
-    token_type: str = "bearer"  # noqa: S105 (tipo de token OAuth2, no una contraseña)
     expires_at: datetime
     user_id: int
     roles: list[Role]
@@ -96,7 +90,7 @@ def client_ip(request: Request) -> str | None:
 
 
 @router.post("/login")
-def login(body: LoginIn, request: Request, db: Db) -> LoginOut:
+def login(body: LoginIn, request: Request, response: Response, db: Db) -> LoginOut:
     # ponytail: detrás del proxy de Railway client.host es el proxy, salvo que
     # uvicorn confíe en él (FORWARDED_ALLOW_IPS). Solo se usa para registrar la sesión.
     ip = client_ip(request)
@@ -135,14 +129,24 @@ def login(body: LoginIn, request: Request, db: Db) -> LoginOut:
         settings.jwt_secret.get_secret_value(),
         algorithm=ALGORITHM,
     )
-    return LoginOut(
-        access_token=token, expires_at=row["expires_at"], user_id=row["user_id"], roles=row["roles"]
+    response.set_cookie(
+        COOKIE,
+        token,
+        max_age=settings.jwt_expire_minutes * 60,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
     )
+    return LoginOut(expires_at=row["expires_at"], user_id=row["user_id"], roles=row["roles"])
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(user: Auth, db: Db) -> None:
+def logout(user: Auth, db: Db, response: Response) -> None:
     db.execute(text("SELECT security.fn_logout(:jti)"), {"jti": user.jti})
+    # Mismos atributos que al crearla; si no, el navegador no la reconoce y no la borra.
+    response.delete_cookie(
+        COOKIE, httponly=True, secure=settings.cookie_secure, samesite=settings.cookie_samesite
+    )
 
 
 @router.get("/me")

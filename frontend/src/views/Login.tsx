@@ -1,16 +1,30 @@
-import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router';
-import { Box, Button, Card, Stack, TextField, Typography } from '@mui/material';
+import { useState, type FormEvent } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Alert, Box, Button, Card, Stack, TextField, Typography } from '@mui/material';
 import PageContainer from '../components/PageContainer';
 import Logo from '../components/Logo';
+import { ApiError } from '../api';
+import { login, safeNext } from '../auth';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // ponytail: solo maqueta; el login real contra la API llega el día 7 (feat/api-auth).
-    navigate('/');
+    const form = new FormData(e.currentTarget);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await login(String(form.get('username')), String(form.get('password')));
+      navigate(safeNext(params.get('next')), { replace: true });
+    } catch (err) {
+      // 401 y 423 traen un mensaje pensado para el usuario; el resto, genérico.
+      setError(err instanceof ApiError ? err.message : 'Error inesperado, intenta de nuevo');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -33,9 +47,21 @@ const Login = () => {
             </Typography>
           </Box>
           <Stack component="form" spacing={3} onSubmit={onSubmit}>
-            <TextField id="username" label="Usuario" autoComplete="username" required fullWidth />
-            <TextField id="password" label="Contraseña" type="password" autoComplete="current-password" required fullWidth />
-            <Button type="submit" variant="contained" size="large" fullWidth>
+            {error && (
+              <Alert severity="error" role="alert">
+                {error}
+              </Alert>
+            )}
+            <TextField name="username" label="Usuario" autoComplete="username" autoFocus required fullWidth />
+            <TextField
+              name="password"
+              label="Contraseña"
+              type="password"
+              autoComplete="current-password"
+              required
+              fullWidth
+            />
+            <Button type="submit" variant="contained" size="large" fullWidth loading={submitting}>
               Ingresar
             </Button>
           </Stack>

@@ -1,8 +1,9 @@
-"""Login, sesión y manejo de errores de la API, contra la base real.
+"""Login, sesión en cookie httpOnly, CSRF y manejo de errores de la API, contra la base real.
 
 La app corre en proceso (TestClient) conectada como ceragen_app, como en
-producción. A diferencia de los tests de base, estos commitean de verdad: el
-fixture crea un usuario propio y lo borra al terminar.
+producción. TestClient guarda las cookies igual que un navegador. A diferencia
+de los tests de base, estos commitean de verdad: el fixture crea un usuario
+propio y lo borra al terminar.
 """
 
 import os
@@ -13,15 +14,17 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth import COOKIE
 from app.config import settings
 from app.main import app
 
 PASSWORD = "clave-de-test-1"
+ORIGIN = {"Origin": settings.cors_origin_list[0]}  # como lo mandaría el navegador desde el front
 
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    return TestClient(app, headers=ORIGIN)
 
 
 @pytest.fixture
@@ -50,23 +53,36 @@ def login(client, username, password):
     return client.post("/auth/login", json={"username": username, "password": password})
 
 
-def bearer(token):
-    return {"Authorization": f"Bearer {token}"}
+def forged(secret):
+    return jwt.encode({"sub": "1", "jti": str(uuid.uuid4()), "exp": 9999999999}, secret, algorithm="HS256")
 
 
-def test_login_me_logout(client, user):
+def test_login_sets_httponly_cookie_and_never_returns_the_token(client, user):
     res = login(client, user["username"], PASSWORD)
     assert res.status_code == 200
     body = res.json()
     assert body["user_id"] == user["id"] and body["roles"][0]["is_admin"] is False
+    assert "access_token" not in body
 
-    me = client.get("/auth/me", headers=bearer(body["access_token"]))
+    cookie = res.headers["set-cookie"]
+    assert cookie.startswith(f"{COOKIE}=")
+    assert "HttpOnly" in cookie and f"SameSite={settings.cookie_samesite}" in cookie
+
+
+def test_me_and_logout_with_cookie(client, user):
+    login(client, user["username"], PASSWORD)
+    token = client.cookies[COOKIE]
+
+    me = client.get("/auth/me")
     # /me lee el usuario de app.user_id: si current_user no lo fijara, no lo encontraría.
     assert me.status_code == 200 and me.json()["username"] == user["username"]
 
-    assert client.post("/auth/logout", headers=bearer(body["access_token"])).status_code == 204
-    # El JWT sigue firmado y sin vencer, pero la sesión ya no existe en la base.
-    assert client.get("/auth/me", headers=bearer(body["access_token"])).status_code == 401
+    assert client.post("/auth/logout").status_code == 204
+    assert COOKIE not in client.cookies  # el navegador la borra
+
+    # Aunque alguien hubiera guardado el token, la sesión ya no existe en la base.
+    client.cookies.set(COOKIE, token)
+    assert client.get("/auth/me").status_code == 401
 
 
 def test_wrong_password_then_lockout(client, user):
@@ -90,24 +106,36 @@ def test_unknown_user_gets_same_answer_as_wrong_password(client):
     [
         None,
         "no-es-un-jwt",
-        # Firma correcta con otro secreto
-        jwt.encode({"sub": "1", "jti": str(uuid.uuid4()), "exp": 9999999999}, "x" * 32, algorithm="HS256"),
-        # alg none: nunca se acepta
+        forged("x" * 32),  # firma correcta con otro secreto
         jwt.encode({"sub": "1", "jti": str(uuid.uuid4()), "exp": 9999999999}, None, algorithm="none"),
+        forged(settings.jwt_secret.get_secret_value()),  # firma válida pero sesión inexistente
     ],
 )
 def test_bad_tokens_are_rejected(client, token):
-    headers = bearer(token) if token else {}
-    assert client.get("/auth/me", headers=headers).status_code == 401
+    if token:
+        client.cookies.set(COOKIE, token)
+    assert client.get("/auth/me").status_code == 401
 
 
-def test_valid_signature_but_unknown_session_is_rejected(client):
-    token = jwt.encode(
-        {"sub": "1", "jti": str(uuid.uuid4()), "exp": 9999999999},
-        settings.jwt_secret.get_secret_value(),
-        algorithm="HS256",
+@pytest.mark.parametrize("headers", [{"Origin": "https://evil.example"}, {}])
+def test_csrf_writes_with_cookie_need_our_origin(user, headers):
+    victim = TestClient(app, headers=ORIGIN)
+    login(victim, user["username"], PASSWORD)
+    # Sitio ajeno, o petición sin Origin, que llega con la cookie de la víctima.
+    attacker = TestClient(app)
+    attacker.cookies.set(COOKIE, victim.cookies[COOKIE])
+    res = attacker.post("/auth/logout", headers=headers)
+    assert res.status_code == 403
+    assert victim.get("/auth/me").status_code == 200  # la sesión sigue viva
+
+
+def test_login_csrf_from_foreign_origin_is_rejected(user):
+    res = TestClient(app).post(
+        "/auth/login",
+        json={"username": user["username"], "password": PASSWORD},
+        headers={"Origin": "https://evil.example"},
     )
-    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+    assert res.status_code == 403
 
 
 def test_validation_error_does_not_echo_the_password(client):
@@ -122,6 +150,6 @@ def test_unexpected_errors_do_not_leak_details(user, monkeypatch):
         raise RuntimeError("detalle interno sensible")
 
     monkeypatch.setattr("app.auth.jwt.encode", boom)  # falla después de un login correcto
-    res = login(TestClient(app, raise_server_exceptions=False), user["username"], PASSWORD)
+    res = login(TestClient(app, headers=ORIGIN, raise_server_exceptions=False), user["username"], PASSWORD)
     assert res.status_code == 500
     assert res.json() == {"detail": "Error interno del servidor"}

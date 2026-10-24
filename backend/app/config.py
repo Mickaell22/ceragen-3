@@ -1,4 +1,6 @@
-from pydantic import Field, SecretStr
+from typing import Literal
+
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +19,18 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = Field(gt=0)
     login_max_attempts: int = Field(gt=0)
     login_lock_minutes: int = Field(gt=0)
+
+    # Cookie de sesión. Front y API en el mismo sitio (localhost, o dominio propio
+    # con subdominios): lax. En sitios distintos (dos *.up.railway.app, que es un
+    # sufijo público): none, que obliga a secure.
+    cookie_secure: bool
+    cookie_samesite: Literal["lax", "strict", "none"]
+
+    @model_validator(mode="after")
+    def _samesite_none_needs_secure(self) -> "Settings":
+        if self.cookie_samesite == "none" and not self.cookie_secure:
+            raise ValueError("COOKIE_SAMESITE=none exige COOKIE_SECURE=true (los navegadores la rechazan)")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

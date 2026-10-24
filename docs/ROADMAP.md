@@ -81,7 +81,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 - [x] Día 7: `feat/api-auth` — login JWT, dependencia `current_user`,
       `SET LOCAL app.user_id` por request, manejo de errores sin filtrar
       excepciones.
-- [ ] Día 8: `feat/web-auth` — pantalla de login, cliente HTTP único con
+- [x] Día 8: `feat/web-auth` — pantalla de login, cliente HTTP único con
       `VITE_API_URL`, rutas protegidas.
 - [ ] Día 9: `feat/roles-menus` — roles, menús dinámicos por rol, sidebar.
 - [ ] Día 10: `feat/users-admin` — gestión de usuarios y roles.

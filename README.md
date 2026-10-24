@@ -29,7 +29,7 @@ docker compose up --build
 base, aplica las migraciones de Alembic y crea el usuario administrador de la
 demo (`SEED_ADMIN_*` en `.env`) antes de que arranque la API.
 
-- Web: http://localhost:8080
+- Web: http://localhost:8080 (entra con `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` de tu `.env`)
 - API: http://localhost:8000 (documentación interactiva en `/docs`)
 - Salud: http://localhost:8000/health
 
@@ -37,9 +37,9 @@ Endpoints de autenticación (documentados en `/docs`):
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `POST` | `/auth/login` | Usuario y contraseña → JWT (`Authorization: Bearer ...`). 401 si no coinciden, 423 si la cuenta está bloqueada. |
+| `POST` | `/auth/login` | Usuario y contraseña → sesión en una cookie httpOnly (el token nunca llega a JavaScript). 401 si no coinciden, 423 si la cuenta está bloqueada. |
 | `GET` | `/auth/me` | Perfil y roles del usuario del token. |
-| `POST` | `/auth/logout` | Revoca la sesión en la base: el token deja de servir aunque no haya vencido. |
+| `POST` | `/auth/logout` | Revoca la sesión en la base y borra la cookie: el token deja de servir aunque no haya vencido. |
 
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
@@ -84,9 +84,11 @@ cd frontend && npm run lint                            # oxlint
   funciones como `security.fn_login`, que nunca devuelven el hash. Bloqueo
   temporal tras intentos fallidos y tiempo de respuesta parejo exista o no el
   usuario.
-- **Tokens revocables:** el JWT lleva el id de la sesión (`jti`) y la API lo
-  verifica contra la base en cada request; un logout o desactivar al usuario
-  lo invalida al instante.
+- **Tokens revocables y fuera del alcance de JavaScript:** el JWT viaja en una
+  cookie httpOnly (un XSS no puede robarlo), lleva el id de la sesión (`jti`)
+  y la API lo verifica contra la base en cada request; un logout o desactivar
+  al usuario lo invalida al instante. Las escrituras con cookie exigen un
+  `Origin` permitido (protección CSRF).
 - **Errores sin fugas:** un error inesperado responde un mensaje genérico (el
   detalle va al log) y los errores de validación no repiten lo que se envió.
 - **Auditoría automática:** un trigger genérico registra cada cambio en

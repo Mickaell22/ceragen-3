@@ -196,6 +196,23 @@ Cada función tiene su test en pytest contra un Postgres real.
 - La IP de la sesión se valida con `ipaddress`; si no es una IP se guarda
   NULL. Detrás del proxy de Railway hay que configurar `FORWARDED_ALLOW_IPS`
   para que sea la del cliente.
+### Notas del front de autenticación (día 8)
+
+- Un solo cliente HTTP (`frontend/src/api.ts`): manda las cookies
+  (`credentials: 'include'`) y traduce errores a `ApiError` con el mensaje de
+  la API.
+- Rutas protegidas con el `loader` de React Router (`requireUser`): sin
+  sesión válida redirige a `/auth/login?next=...`; `next` solo acepta rutas
+  internas (sin redirección abierta).
+- **Sesión en cookie httpOnly** (`ceragen_session`) emitida por la API: el
+  front nunca ve el token. Atributos por entorno: `COOKIE_SECURE` y
+  `COOKIE_SAMESITE` (`lax` si front y API comparten sitio; `none` + `secure`
+  si no, como con dos dominios `*.up.railway.app`, que es un sufijo público).
+- **CSRF:** middleware en la API. Toda escritura que llegue con la cookie
+  exige `Origin` en `CORS_ORIGINS` (o la propia API, para `/docs`); sin
+  `Origin` se rechaza, porque los navegadores siempre lo mandan en POST. El
+  login también se valida (login CSRF). Un login sin cookie ni `Origin`
+  (curl, scripts) se permite.
 - Pospuesto: `person_id` en `security.user` (llega con `core`) y `module`,
   `menu`, `menu_role` (día 9, cuando el front los consuma).
 
