@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth import COOKIE
 from app.auth import router as auth_router
 from app.config import settings
 from app.db.session import engine
@@ -24,6 +25,26 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+
+UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@app.middleware("http")
+async def csrf_origin_check(request: Request, call_next):
+    """CSRF: la sesión viaja en una cookie que el navegador manda sola, así que una
+    escritura con cookie solo se acepta si Origin es uno de los nuestros (los mismos
+    de CORS, o la propia API para /docs). Los navegadores siempre mandan Origin en
+    POST; si falta, no es un navegador y no se acepta la cookie.
+    El login también se valida (login CSRF: entrar a la víctima en la cuenta del atacante).
+    """
+    if request.method in UNSAFE_METHODS and (COOKIE in request.cookies or request.url.path == "/auth/login"):
+        origin = request.headers.get("origin")
+        own = f"{request.url.scheme}://{request.url.netloc}"
+        if origin is None and COOKIE not in request.cookies:
+            pass  # login sin cookie desde un cliente que no es navegador (curl, scripts)
+        elif origin not in settings.cors_origin_list and origin != own:
+            return JSONResponse({"detail": "Origen no permitido"}, status_code=403)
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)
