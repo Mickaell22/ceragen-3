@@ -2,7 +2,9 @@ import { redirect, type LoaderFunctionArgs } from 'react-router';
 import { ApiError, request } from './api';
 
 export type Role = { id: number; name: string; is_admin: boolean };
-export type Me = { id: number; username: string; email: string; roles: Role[] };
+export type MenuItem = { name: string; path: string; icon: string };
+export type MenuGroup = { module: string; menus: MenuItem[] };
+export type Me = { id: number; username: string; email: string; roles: Role[]; menus: MenuGroup[] };
 
 // La API deja la sesión en una cookie httpOnly: el front nunca toca el token.
 export const login = (username: string, password: string) =>

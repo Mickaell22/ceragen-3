@@ -74,11 +74,23 @@ class LoginOut(BaseModel):
     roles: list[Role]
 
 
+class MenuItem(BaseModel):
+    name: str
+    path: str
+    icon: str
+
+
+class MenuGroup(BaseModel):
+    module: str
+    menus: list[MenuItem]
+
+
 class Me(BaseModel):
     id: int
     username: str
     email: str
     roles: list[Role]
+    menus: list[MenuGroup]
 
 
 def client_ip(request: Request) -> str | None:
@@ -151,5 +163,11 @@ def logout(user: Auth, db: Db, response: Response) -> None:
 
 @router.get("/me")
 def me(user: Auth, db: Db) -> Me:
-    row = db.execute(text("SELECT id, username, email, roles FROM security.fn_me()")).mappings().one()
+    row = (
+        db.execute(
+            text("SELECT id, username, email, roles, security.fn_my_menus() AS menus FROM security.fn_me()")
+        )
+        .mappings()
+        .one()
+    )
     return Me(**row)

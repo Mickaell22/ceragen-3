@@ -38,7 +38,7 @@ Endpoints de autenticación (documentados en `/docs`):
 | Método | Ruta | Qué hace |
 |---|---|---|
 | `POST` | `/auth/login` | Usuario y contraseña → sesión en una cookie httpOnly (el token nunca llega a JavaScript). 401 si no coinciden, 423 si la cuenta está bloqueada. |
-| `GET` | `/auth/me` | Perfil y roles del usuario del token. |
+| `GET` | `/auth/me` | Perfil, roles y menús visibles del usuario de la sesión (el sidebar se arma con esto). |
 | `POST` | `/auth/logout` | Revoca la sesión en la base y borra la cookie: el token deja de servir aunque no haya vencido. |
 
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`

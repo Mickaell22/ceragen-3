@@ -76,6 +76,8 @@ def test_me_and_logout_with_cookie(client, user):
     me = client.get("/auth/me")
     # /me lee el usuario de app.user_id: si current_user no lo fijara, no lo encontraría.
     assert me.status_code == 200 and me.json()["username"] == user["username"]
+    # Menús del rol (la semilla da Inicio a los roles no admin).
+    assert {"name": "Inicio", "path": "/", "icon": "layout-dashboard"} in me.json()["menus"][0]["menus"]
 
     assert client.post("/auth/logout").status_code == 204
     assert COOKIE not in client.cookies  # el navegador la borra
