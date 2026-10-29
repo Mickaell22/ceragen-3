@@ -213,8 +213,19 @@ Cada función tiene su test en pytest contra un Postgres real.
   `Origin` se rechaza, porque los navegadores siempre lo mandan en POST. El
   login también se valida (login CSRF). Un login sin cookie ni `Origin`
   (curl, scripts) se permite.
-- Pospuesto: `person_id` en `security.user` (llega con `core`) y `module`,
-  `menu`, `menu_role` (día 9, cuando el front los consuma).
+### Notas de menús por rol (día 9)
+
+- `security.module` agrupa menús (subtítulo del sidebar) y `security.menu` es
+  una pantalla (`path` + ícono de Tabler). Sin menús anidados: un nivel
+  alcanza; si hiciera falta, se agrega `parent_id`.
+- `fn_my_menus()` (migración `0004`), sin parámetros: menús del usuario de la
+  transacción, agrupados y ordenados. El rol `is_admin` ve todos los activos
+  sin necesitar `menu_role`. `/auth/me` los devuelve junto al perfil.
+- **Ocultar un menú no es control de acceso:** cada endpoint valida sus propios
+  permisos en la API.
+- Cada pantalla nueva agrega su fila de `menu` (y sus `menu_role`) en la
+  migración que la crea; el front mapea el nombre del ícono en `Sidebar.tsx`.
+- Pospuesto: `person_id` en `security.user` (llega con `core`).
 
 ## 6. Roles y permisos
 
