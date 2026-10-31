@@ -5,6 +5,8 @@ import ErrorPage from './views/ErrorPage';
 import Home from './views/Home';
 import Login from './views/Login';
 import NotFound from './views/NotFound';
+import Users from './views/Users';
+import { usersLoader } from './users';
 
 const router = createBrowserRouter([
   {
@@ -14,8 +16,11 @@ const router = createBrowserRouter([
     path: '/',
     loader: requireUser,
     element: <FullLayout />,
-    errorElement: <ErrorPage />,
-    children: [{ index: true, element: <Home /> }],
+    errorElement: <ErrorPage fullPage />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: 'users', loader: usersLoader, element: <Users />, errorElement: <ErrorPage /> },
+    ],
   },
   {
     path: '/auth',

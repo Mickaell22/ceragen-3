@@ -225,6 +225,22 @@ Cada función tiene su test en pytest contra un Postgres real.
   permisos en la API.
 - Cada pantalla nueva agrega su fila de `menu` (y sus `menu_role`) en la
   migración que la crea; el front mapea el nombre del ícono en `Sidebar.tsx`.
+### Notas de gestión de usuarios (día 10)
+
+- `security.fn_require_admin()` es la única definición de "solo
+  administradores"; la usan todas las funciones de gestión (migración `0005`,
+  que también refactoriza `fn_create_user`). La API no repite la regla.
+- Errores de la base a HTTP en un solo handler (`app/main.py`, `DB_ERRORS`):
+  `42501` → 403, `P0002` → 404, `23505`/`23503` → 409, `23514` → 422. Los
+  mensajes de nuestras funciones (`RAISE ... USING ERRCODE`) se reenvían tal
+  cual; los de un CHECK o índice de Postgres (nombran tablas y constraints)
+  se reemplazan por uno genérico. Cualquier otro error de base → 500 genérico.
+- Invariante: siempre queda al menos un admin activo
+  (`fn_assert_admin_remains`, al final de `fn_update_user`).
+- Roles con borrado lógico (`fn_set_user_roles`): el rol que sale queda
+  inactivo con `deleted_by`; si vuelve, se reactiva la misma fila.
+- Desactivar un usuario o resetear su contraseña cierra sus sesiones; el
+  reset también lo desbloquea.
 - Pospuesto: `person_id` en `security.user` (llega con `core`).
 
 ## 6. Roles y permisos

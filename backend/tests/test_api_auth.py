@@ -6,19 +6,17 @@ de los tests de base, estos commitean de verdad: el fixture crea un usuario
 propio y lo borra al terminar.
 """
 
-import os
 import uuid
 
 import jwt
-import psycopg
 import pytest
+from conftest import API_PASSWORD as PASSWORD
 from fastapi.testclient import TestClient
 
 from app.auth import COOKIE
 from app.config import settings
 from app.main import app
 
-PASSWORD = "clave-de-test-1"
 ORIGIN = {"Origin": settings.cors_origin_list[0]}  # como lo mandaría el navegador desde el front
 
 
@@ -28,25 +26,9 @@ def client():
 
 
 @pytest.fixture
-def user():
-    """Usuario no admin con el rol Recepción. Se borra entero al final (sesiones y auditoría incluidas)."""
-    username = f"t_{uuid.uuid4().hex[:10]}"
-    with psycopg.connect(os.environ["DATABASE_ADMIN_URL"], autocommit=True) as conn:
-        (uid,) = conn.execute(
-            "INSERT INTO security.user (username, email, password_hash) "
-            "VALUES (%s, %s || '@test.local', public.crypt(%s, public.gen_salt('bf', 4))) RETURNING id",
-            (username, username, PASSWORD),
-        ).fetchone()
-        conn.execute(
-            "INSERT INTO security.user_role (user_id, role_id) "
-            "SELECT %s, id FROM security.role WHERE NOT is_admin ORDER BY id LIMIT 1",
-            (uid,),
-        )
-        yield {"id": uid, "username": username}
-        conn.execute("DELETE FROM security.session WHERE user_id = %s", (uid,))
-        conn.execute("DELETE FROM security.user_role WHERE user_id = %s", (uid,))
-        conn.execute("DELETE FROM security.user WHERE id = %s", (uid,))
-        conn.execute("DELETE FROM audit.event WHERE table_name LIKE 'security.%%' AND row_id = %s", (uid,))
+def user(make_api_user):
+    """Usuario no admin con el rol Recepción (se borra solo al terminar)."""
+    return make_api_user()
 
 
 def login(client, username, password):
