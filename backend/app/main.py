@@ -5,12 +5,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from app.auth import COOKIE
 from app.auth import router as auth_router
 from app.config import settings
 from app.db.session import engine
+from app.users import router as users_router
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(users_router)
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -52,6 +54,33 @@ async def unhandled_error(request: Request, exc: Exception) -> JSONResponse:
     """Cualquier error no previsto: el detalle va al log, al cliente solo un mensaje genérico."""
     logger.exception("error no controlado en %s %s", request.method, request.url.path)
     return JSONResponse({"detail": "Error interno del servidor"}, status_code=500)
+
+
+# Errores que la base lanza a propósito (reglas de negocio) y su respuesta HTTP.
+# sqlstate -> (status, mensaje fijo o None para usar el de la base).
+DB_ERRORS = {
+    "42501": (403, None),  # insufficient_privilege: fn_require_admin
+    "P0002": (404, None),  # no_data_found: el registro no existe
+    "23505": (409, "Ya existe un registro con esos datos"),  # unique_violation
+    "23503": (409, "Hace referencia a un registro que no existe"),  # foreign_key_violation
+    "23514": (422, None),  # check_violation: regla de negocio o CHECK
+}
+
+
+@app.exception_handler(DBAPIError)
+async def db_error(request: Request, exc: DBAPIError) -> JSONResponse:
+    """Errores de negocio de la base -> 4xx con un mensaje para el usuario. El resto -> 500 genérico.
+
+    Los mensajes de nuestras funciones (RAISE ... USING ERRCODE) están pensados para mostrarse.
+    Los de un CHECK o índice de Postgres nombran tablas y constraints: esos no se reenvían.
+    """
+    diag = getattr(exc.orig, "diag", None)
+    mapped = DB_ERRORS.get(getattr(diag, "sqlstate", None) or "")
+    if mapped is None:
+        return await unhandled_error(request, exc)
+    code, fixed = mapped
+    message = fixed or (diag.message_primary if diag.constraint_name is None else "Datos inválidos")
+    return JSONResponse({"detail": message}, status_code=code)
 
 
 @app.exception_handler(RequestValidationError)

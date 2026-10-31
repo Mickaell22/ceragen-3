@@ -84,7 +84,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 - [x] Día 8: `feat/web-auth` — pantalla de login, cliente HTTP único con
       `VITE_API_URL`, rutas protegidas.
 - [x] Día 9: `feat/roles-menus` — roles, menús dinámicos por rol, sidebar.
-- [ ] Día 10: `feat/users-admin` — gestión de usuarios y roles.
+- [x] Día 10: `feat/users-admin` — gestión de usuarios y roles.
 
 ### Fase 4 — Módulos de negocio
 - [ ] Día 11: `feat/catalogs` — impuestos, métodos de pago, tipos de terapia,

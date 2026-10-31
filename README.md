@@ -41,6 +41,10 @@ Endpoints de autenticación (documentados en `/docs`):
 | `GET` | `/auth/me` | Perfil, roles y menús visibles del usuario de la sesión (el sidebar se arma con esto). |
 | `POST` | `/auth/logout` | Revoca la sesión en la base y borra la cookie: el token deja de servir aunque no haya vencido. |
 
+Gestión de usuarios (solo administradores; la base lo exige y la API responde 403):
+`GET /users`, `GET /roles`, `POST /users`, `PUT /users/{id}`,
+`POST /users/{id}/password`, `POST /users/{id}/unlock`.
+
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
 `VITE_API_URL` para que coincidan.
