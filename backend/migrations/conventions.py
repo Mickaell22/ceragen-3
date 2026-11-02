@@ -21,3 +21,29 @@ def standard_triggers(table: str) -> str:
             FOR EACH ROW EXECUTE FUNCTION core.fn_touch();
         SELECT audit.fn_enable('{table}');
     """
+
+
+def catalog_table(table: str, extra_columns: str = "") -> str:
+    """Tabla de catálogo: id, name único (sin distinguir mayúsculas), columnas
+    propias, auditoría y la regla "solo un administrador escribe" en la base.
+
+    extra_columns va en una sola línea SQL sin comentarios "--" (se le agrega la coma final).
+    La API (ceragen_app) puede leer, insertar y actualizar; nunca borrar (se
+    desactiva con is_active). El trigger admin_only corta cualquier escritura
+    de un usuario que no sea admin, aunque llegue por fuera de la API.
+    """
+    short = table.split(".")[1]
+    extra = f"{extra_columns.strip().rstrip(',')}," if extra_columns.strip() else ""
+    return f"""
+        CREATE TABLE {table} (
+            id    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name  text NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 100),
+            {extra}
+            {AUDIT_COLUMNS}
+        );
+        CREATE UNIQUE INDEX {short}_name_key ON {table} (lower(btrim(name)));
+        CREATE TRIGGER admin_only BEFORE INSERT OR UPDATE OR DELETE ON {table}
+            FOR EACH STATEMENT EXECUTE FUNCTION core.fn_admin_only();
+        {standard_triggers(table)}
+        GRANT SELECT, INSERT, UPDATE ON {table} TO ceragen_app;
+    """

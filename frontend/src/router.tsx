@@ -6,6 +6,8 @@ import Home from './views/Home';
 import Login from './views/Login';
 import NotFound from './views/NotFound';
 import Users from './views/Users';
+import Catalog from './views/Catalog';
+import { catalogLoader } from './catalogs';
 import { usersLoader } from './users';
 
 const router = createBrowserRouter([
@@ -20,6 +22,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'users', loader: usersLoader, element: <Users />, errorElement: <ErrorPage /> },
+      { path: 'catalogs/:key', loader: catalogLoader, element: <Catalog />, errorElement: <ErrorPage /> },
     ],
   },
   {

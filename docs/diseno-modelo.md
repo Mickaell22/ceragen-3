@@ -241,6 +241,31 @@ Cada función tiene su test en pytest contra un Postgres real.
   inactivo con `deleted_by`; si vuelve, se reactiva la misma fila.
 - Desactivar un usuario o resetear su contraseña cierra sus sesiones; el
   reset también lo desbloquea.
+### Patrón de catálogos (día 11)
+
+Para tablas simples de una sola tabla. Un catálogo nuevo son tres pasos:
+
+1. Migración: `catalog_table("schema.tabla", "columnas extra")` (en
+   `migrations/conventions.py`) crea la tabla con `name` único sin distinguir
+   mayúsculas ni espacios, auditoría, `GRANT SELECT, INSERT, UPDATE` a
+   `ceragen_app` (sin `DELETE`) y el trigger de sentencia `admin_only`, que
+   corta escrituras de quien no sea admin aunque lleguen por fuera de la API.
+   Más su fila en `security.menu`.
+2. API: una entrada en `CATALOGS` (`app/catalogs.py`); de ahí salen los
+   modelos de validación (`create_model`), los endpoints y los metadatos.
+   Consultas con SQLAlchemy Core, sin SQL armado a mano.
+3. Front: nada. La pantalla genérica (`views/Catalog.tsx`) se arma con los
+   metadatos; solo hay que sumar el ícono al mapa del sidebar si es nuevo.
+
+- `core.fn_touch` llena o limpia `deleted_at`/`deleted_by` cuando cambia
+  `is_active`, en todas las tablas de negocio.
+- Gotcha de tests: la limpieza de filas commiteadas corre como superusuario,
+  y `admin_only` también la frena. Se usa `SET session_replication_role =
+  replica` (salta triggers en esa conexión). No se agregó un atajo para
+  superusuarios en `fn_require_admin`: los tests de base cambian de rol con
+  `SET ROLE` y `session_user` sigue siendo el superusuario, así que todo
+  pasaría la verificación.
+
 - Pospuesto: `person_id` en `security.user` (llega con `core`).
 
 ## 6. Roles y permisos

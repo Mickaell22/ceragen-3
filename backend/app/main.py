@@ -9,6 +9,7 @@ from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from app.auth import COOKIE
 from app.auth import router as auth_router
+from app.catalogs import router as catalogs_router
 from app.config import settings
 from app.db.session import engine
 from app.users import router as users_router
@@ -27,6 +28,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(catalogs_router)
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
