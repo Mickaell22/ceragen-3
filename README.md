@@ -45,6 +45,11 @@ Gestión de usuarios (solo administradores; la base lo exige y la API responde 4
 `GET /users`, `GET /roles`, `POST /users`, `PUT /users/{id}`,
 `POST /users/{id}/password`, `POST /users/{id}/unlock`.
 
+Catálogos (géneros, estados civiles, tipos de terapia, impuestos, métodos de
+pago): `GET /catalogs` (metadatos), `GET|POST /catalogs/{key}`,
+`PUT /catalogs/{key}/{id}`. Leer: cualquier usuario con sesión; escribir:
+solo administradores. Nunca se borran, se desactivan.
+
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
 `VITE_API_URL` para que coincidan.

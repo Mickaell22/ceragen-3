@@ -4,9 +4,13 @@ import { Menu, MenuItem, Sidebar as MuiSidebar } from 'react-mui-sidebar';
 import {
   IconCalendar,
   IconCash,
+  IconCreditCard,
   IconFileInvoice,
+  IconGenderBigender,
+  IconHeartHandshake,
   IconLayoutDashboard,
   IconPoint,
+  IconReceiptTax,
   IconReportAnalytics,
   IconSettings,
   IconStethoscope,
@@ -33,6 +37,10 @@ const ICONS: Record<string, Icon> = {
   cash: IconCash,
   'report-analytics': IconReportAnalytics,
   settings: IconSettings,
+  'gender-bigender': IconGenderBigender,
+  'heart-handshake': IconHeartHandshake,
+  'receipt-tax': IconReceiptTax,
+  'credit-card': IconCreditCard,
 };
 
 // Los menús vienen de la API según los roles del usuario (security.fn_my_menus).
