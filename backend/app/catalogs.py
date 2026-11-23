@@ -18,7 +18,8 @@ from sqlalchemy import Column, insert, select, table, update
 from app.auth import Auth
 from app.db.session import Db
 
-FieldType = Literal["text", "longtext", "percent", "bool"]
+# ref: id de una fila de otro catálogo (CatalogField.ref = su key); el front lo muestra como select.
+FieldType = Literal["text", "longtext", "percent", "bool", "ref"]
 
 # Validación de cada tipo de campo (la base repite los límites con CHECK).
 ANNOTATIONS: dict[FieldType, Any] = {
@@ -26,6 +27,7 @@ ANNOTATIONS: dict[FieldType, Any] = {
     "longtext": Annotated[str | None, Field(default=None, max_length=500)],
     "percent": Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places=2)],
     "bool": Annotated[bool, Field(default=False)],
+    "ref": Annotated[int, Field(gt=0)],  # que exista lo valida la FK (23503 -> 409)
 }
 
 
@@ -34,6 +36,7 @@ class CatalogField:
     name: str
     label: str
     type: FieldType
+    ref: str | None = None  # key del catálogo referenciado, solo para type="ref"
 
 
 @dataclass(frozen=True)
@@ -66,7 +69,26 @@ CATALOGS = (
             CatalogField("requires_proof", "Exige comprobante", "bool"),
         ),
     ),
+    Catalog("disease-types", "Tipos de enfermedad", "clinic.disease_type", (NAME,)),
+    Catalog(
+        "diseases",
+        "Enfermedades",
+        "clinic.disease",
+        (NAME, CatalogField("disease_type_id", "Tipo", "ref", ref="disease-types")),
+    ),
+    Catalog(
+        "allergies",
+        "Alergias",
+        "clinic.allergy",
+        (NAME, CatalogField("description", "Descripción", "longtext")),
+    ),
 )
+
+# Un ref mal escrito rompería el front en silencio: mejor que falle al arrancar.
+_keys = {c.key for c in CATALOGS}
+_bad_refs = [f.ref for c in CATALOGS for f in c.fields if f.type == "ref" and f.ref not in _keys]
+if _bad_refs:
+    raise RuntimeError(f"CATALOGS: ref a catálogos inexistentes: {_bad_refs}")
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs"])
 
@@ -75,6 +97,7 @@ class FieldMeta(BaseModel):
     name: str
     label: str
     type: FieldType
+    ref: str | None = None
 
 
 class CatalogMeta(BaseModel):

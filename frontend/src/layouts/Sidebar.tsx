@@ -2,8 +2,10 @@ import { NavLink, useLocation, useRouteLoaderData } from 'react-router';
 import { Box, Drawer, useMediaQuery, type Theme } from '@mui/material';
 import { Menu, MenuItem, Sidebar as MuiSidebar } from 'react-mui-sidebar';
 import {
+  IconAlertTriangle,
   IconCalendar,
   IconCash,
+  IconCategory,
   IconCreditCard,
   IconFileInvoice,
   IconGenderBigender,
@@ -15,6 +17,7 @@ import {
   IconSettings,
   IconStethoscope,
   IconUsers,
+  IconVirus,
   type Icon,
 } from '@tabler/icons-react';
 import SimpleBar from 'simplebar-react';
@@ -41,6 +44,9 @@ const ICONS: Record<string, Icon> = {
   'heart-handshake': IconHeartHandshake,
   'receipt-tax': IconReceiptTax,
   'credit-card': IconCreditCard,
+  category: IconCategory,
+  virus: IconVirus,
+  'alert-triangle': IconAlertTriangle,
 };
 
 // Los menús vienen de la API según los roles del usuario (security.fn_my_menus).

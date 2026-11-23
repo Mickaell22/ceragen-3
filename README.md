@@ -46,7 +46,7 @@ Gestión de usuarios (solo administradores; la base lo exige y la API responde 4
 `POST /users/{id}/password`, `POST /users/{id}/unlock`.
 
 Catálogos (géneros, estados civiles, tipos de terapia, impuestos, métodos de
-pago): `GET /catalogs` (metadatos), `GET|POST /catalogs/{key}`,
+pago, tipos de enfermedad, enfermedades, alergias): `GET /catalogs` (metadatos), `GET|POST /catalogs/{key}`,
 `PUT /catalogs/{key}/{id}`. Leer: cualquier usuario con sesión; escribir:
 solo administradores. Nunca se borran, se desactivan.
 

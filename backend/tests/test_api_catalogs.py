@@ -30,7 +30,7 @@ def names(make_api_user):
     with psycopg.connect(os.environ["DATABASE_ADMIN_URL"], autocommit=True) as conn:
         # Limpieza de mantenimiento: salta los triggers (admin_only, auditoría) de esta conexión.
         conn.execute("SET session_replication_role = replica")
-        for tbl in ("billing.tax", "core.gender"):
+        for tbl in ("clinic.disease", "clinic.disease_type", "billing.tax", "core.gender"):
             ids = [r[0] for r in conn.execute(f"SELECT id FROM {tbl} WHERE name LIKE %s", (prefix + "%",))]  # noqa: S608
             conn.execute(f"DELETE FROM {tbl} WHERE id = ANY(%s)", (ids,))  # noqa: S608
             conn.execute("DELETE FROM audit.event WHERE table_name = %s AND row_id = ANY(%s)", (tbl, ids))
@@ -81,3 +81,22 @@ def test_duplicate_is_409_and_invalid_percent_is_422(admin, names):
 def test_update_missing_item_is_404(admin):
     res = admin.put("/catalogs/genders/999999999", json={"name": "x", "is_active": True})
     assert res.status_code == 404
+
+
+def test_reference_field_metadata_and_validation(admin, names):
+    meta = {c["key"]: c for c in admin.get("/catalogs").json()}
+    ref = next(f for f in meta["diseases"]["fields"] if f["type"] == "ref")
+    assert ref == {"name": "disease_type_id", "label": "Tipo", "type": "ref", "ref": "disease-types"}
+
+    type_id = admin.post("/catalogs/disease-types", json={"name": f"{names} tipo"}).json()["id"]
+    res = admin.post("/catalogs/diseases", json={"name": f"{names} enf", "disease_type_id": type_id})
+    assert res.status_code == 201
+    item = next(d for d in admin.get("/catalogs/diseases").json() if d["id"] == res.json()["id"])
+    assert item["disease_type_id"] == type_id
+
+    # Tipo inexistente: lo rechaza la FK sin filtrar el nombre de la constraint.
+    res = admin.post("/catalogs/diseases", json={"name": f"{names} enf2", "disease_type_id": 999999999})
+    assert res.status_code == 409
+    assert res.json() == {"detail": "Hace referencia a un registro que no existe"}
+    # Sin tipo: lo frena la validación antes de llegar a la base.
+    assert admin.post("/catalogs/diseases", json={"name": f"{names} enf3"}).status_code == 422
