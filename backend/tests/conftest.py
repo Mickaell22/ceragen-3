@@ -70,3 +70,10 @@ def make_api_user():
             conn.execute("DELETE FROM security.user_role WHERE user_id = %s", (uid,))
             conn.execute("DELETE FROM security.user WHERE id = %s", (uid,))
             conn.execute("DELETE FROM audit.event WHERE table_name = 'security.user' AND row_id = %s", (uid,))
+
+
+def make_cedula(seed: int, province: int = 9) -> str:
+    """Cédula ecuatoriana válida (módulo 10), distinta para cada seed. Ficticia: solo para tests."""
+    base = f"{province:02d}{seed % 6}{seed // 6 % 1_000_000:06d}"  # 9 dígitos, tercer dígito < 6
+    total = sum(d * 2 - 9 if d * 2 > 9 else d * 2 for d in map(int, base[0::2])) + sum(map(int, base[1::2]))
+    return base + str((10 - total % 10) % 10)

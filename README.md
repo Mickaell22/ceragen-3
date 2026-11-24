@@ -50,6 +50,11 @@ pago, tipos de enfermedad, enfermedades, alergias): `GET /catalogs` (metadatos),
 `PUT /catalogs/{key}/{id}`. Leer: cualquier usuario con sesión; escribir:
 solo administradores. Nunca se borran, se desactivan.
 
+Pacientes y clientes (quien paga): `GET /patients?q=` (búsqueda por nombre o
+identificación), `GET|PUT /patients/{id}`, `POST /patients`, `GET /clients?q=`,
+`POST /clients`. Escribir exige tener asignada la pantalla de pacientes (o ser
+admin); lo valida la base.
+
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
 `VITE_API_URL` para que coincidan.

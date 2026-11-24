@@ -12,6 +12,7 @@ from app.auth import router as auth_router
 from app.catalogs import router as catalogs_router
 from app.config import settings
 from app.db.session import engine
+from app.patients import router as patients_router
 from app.users import router as users_router
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(catalogs_router)
+app.include_router(patients_router)
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -68,6 +70,14 @@ DB_ERRORS = {
     "23514": (422, None),  # check_violation: regla de negocio o CHECK
 }
 
+# Mensajes para el usuario de constraints concretas (sin esto, "Datos inválidos" genérico).
+CONSTRAINT_MESSAGES = {
+    "person_identification_check": "La identificación no es válida",
+    "person_identification_type_identification_key": "Ya existe una persona con esa identificación",
+    "patient_person_id_key": "Esa persona ya está registrada como paciente",
+    "client_person_id_key": "Esa persona ya está registrada como cliente",
+}
+
 
 @app.exception_handler(DBAPIError)
 async def db_error(request: Request, exc: DBAPIError) -> JSONResponse:
@@ -81,6 +91,8 @@ async def db_error(request: Request, exc: DBAPIError) -> JSONResponse:
     if mapped is None:
         return await unhandled_error(request, exc)
     code, fixed = mapped
+    if diag.constraint_name in CONSTRAINT_MESSAGES:
+        return JSONResponse({"detail": CONSTRAINT_MESSAGES[diag.constraint_name]}, status_code=code)
     message = fixed or (diag.message_primary if diag.constraint_name is None else "Datos inválidos")
     return JSONResponse({"detail": message}, status_code=code)
 
