@@ -92,7 +92,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 - [x] Día 12: `feat/clinic-catalogs` — enfermedades, tipos, alergias.
 - [x] Día 13–14: `feat/persons-patients` — personas (validación de cédula),
       clientes, pacientes, alergias y enfermedades del paciente.
-- [ ] Día 15: `feat/medical-history` — historial médico.
+- [x] Día 15: `feat/medical-history` — historial médico.
 - [ ] Día 16: `feat/medical-staff` — personal médico.
 - [ ] Día 17: `feat/products-promotions` — productos y promociones.
 - [ ] Día 18–19: `feat/billing` — `fn_create_invoice`, `fn_register_payment`,

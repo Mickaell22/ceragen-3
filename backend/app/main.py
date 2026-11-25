@@ -12,6 +12,7 @@ from app.auth import router as auth_router
 from app.catalogs import router as catalogs_router
 from app.config import settings
 from app.db.session import engine
+from app.history import router as history_router
 from app.patients import router as patients_router
 from app.users import router as users_router
 
@@ -31,6 +32,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(catalogs_router)
 app.include_router(patients_router)
+app.include_router(history_router)
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -76,6 +78,7 @@ CONSTRAINT_MESSAGES = {
     "person_identification_type_identification_key": "Ya existe una persona con esa identificación",
     "patient_person_id_key": "Esa persona ya está registrada como paciente",
     "client_person_id_key": "Esa persona ya está registrada como cliente",
+    "medical_history_recorded_on_check": "La fecha no puede ser futura",
 }
 
 
