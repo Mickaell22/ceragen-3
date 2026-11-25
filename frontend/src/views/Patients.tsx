@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Form, useLoaderData, useRevalidator, useRouteLoaderData, useSubmit } from 'react-router';
+import { Form, Link, useLoaderData, useRevalidator, useRouteLoaderData, useSubmit } from 'react-router';
 import {
   Alert,
   Autocomplete,
@@ -27,7 +27,7 @@ import {
   Typography,
   debounce,
 } from '@mui/material';
-import { IconEdit, IconSearch, IconUserPlus } from '@tabler/icons-react';
+import { IconEdit, IconNotes, IconSearch, IconUserPlus } from '@tabler/icons-react';
 import PageContainer from '../components/PageContainer';
 import DashboardCard from '../components/DashboardCard';
 import { ApiError } from '../api';
@@ -47,9 +47,6 @@ import {
 
 type Data = Awaited<ReturnType<typeof patientsLoader>>;
 type Options = Data['options'];
-
-/** Formularios largos: Escape o un clic afuera no los cierran (se perdería lo escrito). Solo Cancelar. */
-const keepOpen = { disableEscapeKeyDown: true } as const;
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : 'Error inesperado, intenta de nuevo');
 const active = (items: CatalogItem[], keep: (number | null)[] = []) =>
@@ -204,7 +201,8 @@ const ClientDialog = ({
   };
 
   return (
-    <Dialog open {...keepOpen} fullWidth maxWidth="sm" aria-labelledby="client-dialog-title">
+    // Sin onClose: Escape o un clic afuera no cierran el formulario (se perdería lo escrito). Solo Cancelar.
+    <Dialog open fullWidth maxWidth="sm" aria-labelledby="client-dialog-title">
       <form onSubmit={onSubmit}>
         <DialogTitle id="client-dialog-title">Nuevo cliente</DialogTitle>
         <DialogContent>
@@ -334,7 +332,8 @@ const PatientDialog = ({
   );
 
   return (
-    <Dialog open {...keepOpen} fullWidth maxWidth="md">
+    // Sin onClose a propósito: ver ClientDialog.
+    <Dialog open fullWidth maxWidth="md">
       <form onSubmit={onSubmit}>
         <DialogTitle>
           {patient ? `Editar paciente: ${patient.person.last_name} ${patient.person.first_name}` : 'Nuevo paciente'}
@@ -408,6 +407,8 @@ const Patients = () => {
   // Tener la pantalla da permiso de escritura (la base lo exige igual): sin ella, solo lectura.
   const canEdit =
     me.roles.some((r) => r.is_admin) || me.menus.some((g) => g.menus.some((m) => m.path === '/patients'));
+  const canSeeHistory =
+    me.roles.some((r) => r.is_admin) || me.menus.some((g) => g.menus.some((m) => m.path === '/medical-history'));
   const { revalidate } = useRevalidator();
   const submit = useSubmit();
   // Una búsqueda por pausa al escribir: cada una recarga la lista entera.
@@ -478,7 +479,7 @@ const Patients = () => {
                 <TableCell>Teléfono</TableCell>
                 <TableCell>Paga</TableCell>
                 <TableCell>Estado</TableCell>
-                {canEdit && <TableCell align="right">Acciones</TableCell>}
+                {(canEdit || canSeeHistory) && <TableCell align="right">Acciones</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -491,13 +492,26 @@ const Patients = () => {
                   <TableCell>
                     <Chip size="small" color={p.is_active ? 'success' : 'default'} label={p.is_active ? 'Activo' : 'Inactivo'} />
                   </TableCell>
-                  {canEdit && (
+                  {(canEdit || canSeeHistory) && (
                     <TableCell align="right">
+                      {canSeeHistory && (
+                        <Tooltip title="Historial médico">
+                          <IconButton
+                            component={Link}
+                            to={`/medical-history?patient=${p.id}`}
+                            aria-label={`Historial de ${p.full_name}`}
+                          >
+                            <IconNotes size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canEdit && (
                       <Tooltip title="Editar">
                         <IconButton aria-label={`Editar ${p.full_name}`} onClick={() => openEdit(p)}>
                           <IconEdit size={18} />
                         </IconButton>
                       </Tooltip>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>

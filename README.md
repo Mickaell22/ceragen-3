@@ -55,6 +55,10 @@ identificación), `GET|PUT /patients/{id}`, `POST /patients`, `GET /clients?q=`,
 `POST /clients`. Escribir exige tener asignada la pantalla de pacientes (o ser
 admin); lo valida la base.
 
+Historial médico: `GET|POST /patients/{id}/history`, `PUT /history/{id}`.
+Leer y escribir exige la pantalla de historial (terapeutas y admin); corregir
+una entrada, ser su autor. Las entradas no se borran, se anulan.
+
 Si algún puerto ya está ocupado en tu máquina, cámbialo en `.env`
 (`POSTGRES_PORT`, `API_PORT`, `WEB_PORT`) y ajusta `CORS_ORIGINS` y
 `VITE_API_URL` para que coincidan.

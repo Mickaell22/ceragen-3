@@ -296,6 +296,21 @@ Para tablas simples de una sola tabla. Un catálogo nuevo son tres pasos:
 
 - Pospuesto: `person_id` en `security.user` (llega con `core`).
 
+### Historial médico (día 15)
+
+- Es dato clínico: se protege también la **lectura**. `ceragen_app` no tiene
+  `SELECT` sobre `clinic.medical_history` (solo sobre `id`, para el
+  `RETURNING`); lee con `clinic.fn_patient_history(patient_id)`, que exige el
+  menú `/medical-history`. Escribir exige el mismo menú (`menu_guard`).
+- El menú se asigna solo a Terapeuta (y admin). Recepción ve pacientes pero no
+  su historial: ni el menú, ni el botón, ni la API (403).
+- Solo el autor corrige su entrada (trigger `author_only`; admin puede todas).
+  La auditoría guarda el texto anterior. No se borra: se anula con
+  `is_active = false` y se sigue viendo, tachada.
+- La fecha de la entrada no puede ser futura (`CHECK`, 422 con mensaje).
+- La página guarda el paciente en la URL (`?patient=`): se enlaza desde la
+  lista de pacientes.
+
 ## 6. Roles y permisos
 
 | Rol | Uso |
