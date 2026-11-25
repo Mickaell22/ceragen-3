@@ -257,6 +257,13 @@ Para tablas simples de una sola tabla. Un catálogo nuevo son tres pasos:
 3. Front: nada. La pantalla genérica (`views/Catalog.tsx`) se arma con los
    metadatos; solo hay que sumar el ícono al mapa del sidebar si es nuevo.
 
+- **Referencia a otro catálogo** (día 12): campo `type="ref"` con
+  `ref="<key del catálogo>"` en `CATALOGS` y columna `bigint NOT NULL
+  REFERENCES ...` en la migración, más su índice (Postgres no indexa FKs).
+  El front lo dibuja como select con las filas activas del catálogo
+  referenciado (y la actual aunque esté inactiva) y muestra el nombre en la
+  tabla. Un id inexistente lo rechaza la FK (409). Un `ref` a un catálogo que
+  no existe en `CATALOGS` impide arrancar la API.
 - `core.fn_touch` llena o limpia `deleted_at`/`deleted_by` cuando cambia
   `is_active`, en todas las tablas de negocio.
 - Gotcha de tests: la limpieza de filas commiteadas corre como superusuario,

@@ -12,6 +12,7 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
+  MenuItem,
   Stack,
   Switch,
   Table,
@@ -31,16 +32,40 @@ import { saveItem, type CatalogField, type CatalogItem, type catalogLoader } fro
 
 type Data = Awaited<ReturnType<typeof catalogLoader>>;
 
+type Options = Data['options'];
+
 /** Cómo se muestra un valor en la tabla según el tipo de campo. */
-const display = (field: CatalogField, value: CatalogItem[string]) => {
+const display = (field: CatalogField, value: CatalogItem[string], options: Options) => {
   if (field.type === 'bool') return value ? 'Sí' : 'No';
+  if (field.type === 'ref') return options[field.ref ?? '']?.find((o) => o.id === value)?.name ?? '';
   if (field.type === 'percent') return `${Number(value)} %`;
   return value ?? '';
 };
 
 /** Campo del formulario según su tipo. Los bool van aparte (switch controlado). */
-const Input = ({ field, value }: { field: CatalogField; value: CatalogItem[string] | undefined }) => {
+const Input = ({
+  field,
+  value,
+  options,
+}: {
+  field: CatalogField;
+  value: CatalogItem[string] | undefined;
+  options: Options;
+}) => {
   const common = { name: field.name, label: field.label, defaultValue: value ?? '', fullWidth: true };
+  if (field.type === 'ref')
+    return (
+      <TextField {...common} select required>
+        {/* Solo opciones activas, más la actual aunque se haya desactivado (para no perderla al editar). */}
+        {(options[field.ref ?? ''] ?? [])
+          .filter((o) => o.is_active || o.id === value)
+          .map((o) => (
+            <MenuItem key={o.id} value={o.id}>
+              {o.name}
+            </MenuItem>
+          ))}
+      </TextField>
+    );
   if (field.type === 'longtext') return <TextField {...common} multiline minRows={2} slotProps={{ htmlInput: { maxLength: 500 } }} />;
   if (field.type === 'percent')
     return (
@@ -60,12 +85,14 @@ const Input = ({ field, value }: { field: CatalogField; value: CatalogItem[strin
 const ItemDialog = ({
   catalogKey,
   fields,
+  options,
   item,
   onClose,
   onSaved,
 }: {
   catalogKey: string;
   fields: CatalogField[];
+  options: Options;
   item: CatalogItem | null;
   onClose: () => void;
   onSaved: () => void;
@@ -84,7 +111,7 @@ const ItemDialog = ({
     for (const f of fields) {
       if (f.type === 'bool') continue;
       const raw = String(form.get(f.name) ?? '').trim();
-      body[f.name] = f.type === 'longtext' && raw === '' ? null : raw;
+      body[f.name] = f.type === 'longtext' && raw === '' ? null : f.type === 'ref' ? Number(raw) : raw;
     }
     if (item) body.is_active = active;
     setSaving(true);
@@ -118,7 +145,7 @@ const ItemDialog = ({
                   label={f.label}
                 />
               ) : (
-                <Input key={f.name} field={f} value={item?.[f.name]} />
+                <Input key={f.name} field={f} value={item?.[f.name]} options={options} />
               ),
             )}
             {item && (
@@ -142,7 +169,7 @@ const ItemDialog = ({
 
 /** Pantalla genérica: la misma para todos los catálogos, armada con los metadatos de la API. */
 const Catalog = () => {
-  const { meta, items } = useLoaderData() as Data;
+  const { meta, items, options } = useLoaderData() as Data;
   const me = useRouteLoaderData('app') as Me;
   const canEdit = me.roles.some((r) => r.is_admin); // la API lo exige igual; esto solo oculta botones
   const { revalidate } = useRevalidator();
@@ -174,7 +201,7 @@ const Catalog = () => {
             {items.map((item) => (
               <TableRow key={item.id} hover sx={{ opacity: item.is_active ? 1 : 0.6 }}>
                 {meta.fields.map((f) => (
-                  <TableCell key={f.name}>{display(f, item[f.name])}</TableCell>
+                  <TableCell key={f.name}>{display(f, item[f.name], options)}</TableCell>
                 ))}
                 <TableCell>
                   <Chip size="small" color={item.is_active ? 'success' : 'default'} label={item.is_active ? 'Activo' : 'Inactivo'} />
@@ -198,6 +225,7 @@ const Catalog = () => {
           key={meta.key}
           catalogKey={meta.key}
           fields={meta.fields}
+          options={options}
           item={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSaved={() => {
