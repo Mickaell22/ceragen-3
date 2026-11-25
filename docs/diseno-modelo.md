@@ -273,6 +273,27 @@ Para tablas simples de una sola tabla. Un catálogo nuevo son tres pasos:
   `SET ROLE` y `session_user` sigue siendo el superusuario, así que todo
   pasaría la verificación.
 
+### Personas, clientes y pacientes (días 13-14)
+
+- `core.fn_is_valid_cedula` (módulo 10, provincia 01-24 o 30, tercer dígito
+  < 6) vive en un `CHECK` de `core.person`. Los tests la comparan con una
+  implementación independiente en Python (`make_cedula` en `conftest.py`).
+  El RUC solo se valida en formato (techo anotado en la migración `0008`).
+- Una persona es única por `(identification_type, identification)`. Alta de
+  paciente o cliente = upsert de la persona: la misma persona puede ser
+  cliente y paciente sin duplicarse. La identificación no se edita.
+- **Permisos por pantalla:** `security.fn_has_menu(path)` y el trigger
+  `core.fn_menu_guard('<path>')`. Escribir en personas, clientes, pacientes y
+  sus relaciones exige tener asignado el menú `/patients` (o ser admin); leer
+  lo puede cualquier usuario con sesión. Asignar el menú a un rol en
+  `security.menu_role` es dar el permiso: una sola fuente de verdad.
+- Mensajes de constraints concretas en `CONSTRAINT_MESSAGES` (`app/main.py`):
+  "La identificación no es válida", duplicados de persona, paciente o cliente.
+- Alergias y enfermedades del paciente se sincronizan con borrado lógico
+  (`sync_links`, solo sobre tablas de una lista fija).
+- UX: los formularios largos no se cierran con Escape ni con un clic afuera
+  (se perdía lo escrito); solo con Cancelar.
+
 - Pospuesto: `person_id` en `security.user` (llega con `core`).
 
 ## 6. Roles y permisos

@@ -17,6 +17,7 @@ import {
   IconSettings,
   IconStethoscope,
   IconUsers,
+  IconUsersGroup,
   IconVirus,
   type Icon,
 } from '@tabler/icons-react';
@@ -34,6 +35,7 @@ const WIDTH = '270px';
 const ICONS: Record<string, Icon> = {
   'layout-dashboard': IconLayoutDashboard,
   users: IconUsers,
+  'users-group': IconUsersGroup,
   calendar: IconCalendar,
   stethoscope: IconStethoscope,
   'file-invoice': IconFileInvoice,

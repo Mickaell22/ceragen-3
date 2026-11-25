@@ -90,7 +90,7 @@ El `!` (o un pie `BREAKING CHANGE:`) marca un cambio incompatible.
 - [x] Día 11: `feat/catalogs` — impuestos, métodos de pago, tipos de terapia,
       género, estado civil (patrón CRUD que se repite después).
 - [x] Día 12: `feat/clinic-catalogs` — enfermedades, tipos, alergias.
-- [ ] Día 13–14: `feat/persons-patients` — personas (validación de cédula),
+- [x] Día 13–14: `feat/persons-patients` — personas (validación de cédula),
       clientes, pacientes, alergias y enfermedades del paciente.
 - [ ] Día 15: `feat/medical-history` — historial médico.
 - [ ] Día 16: `feat/medical-staff` — personal médico.

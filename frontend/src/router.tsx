@@ -7,6 +7,8 @@ import Login from './views/Login';
 import NotFound from './views/NotFound';
 import Users from './views/Users';
 import Catalog from './views/Catalog';
+import Patients from './views/Patients';
+import { patientsLoader } from './patients';
 import { catalogLoader } from './catalogs';
 import { usersLoader } from './users';
 
@@ -21,6 +23,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage fullPage />,
     children: [
       { index: true, element: <Home /> },
+      { path: 'patients', loader: patientsLoader, element: <Patients />, errorElement: <ErrorPage /> },
       { path: 'users', loader: usersLoader, element: <Users />, errorElement: <ErrorPage /> },
       { path: 'catalogs/:key', loader: catalogLoader, element: <Catalog />, errorElement: <ErrorPage /> },
     ],
